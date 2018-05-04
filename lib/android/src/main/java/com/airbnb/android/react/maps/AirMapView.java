@@ -686,7 +686,6 @@ public class AirMapView extends MapView implements GoogleMap.InfoWindowAdapter,
     marker.setPosition(latlng);
     marker.setImage(imageSrc);
     marker.setIdentifier(pointId);
-    marker.setAnchor(0.5f, 0.65f);
     marker.addToMap(map);
 //    marker.update(20, 19);
     arrayListMarker.add(marker);
