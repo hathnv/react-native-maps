@@ -19,8 +19,9 @@ import com.google.android.gms.maps.GoogleMapOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
-import com.google.maps.android.data.kml.KmlLayer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -36,6 +37,16 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
   private static final int FIT_TO_SUPPLIED_MARKERS = 6;
   private static final int FIT_TO_COORDINATES = 7;
   private static final int SET_MAP_BOUNDARIES = 8;
+  private static final int ZOOM_MAP = 9;
+  private static final int ANIMATE_TO_BEARING_ZOOM = 10;
+  private static final int MAP_STYLE = 11;
+  private static final int ANIMATE_ZOOM = 12;
+  private static final int ADD_MARKER = 13;
+  private static final int ANIMATE_ANGLE = 14;
+  private static final int REMOVE_MARKER = 15;
+  private static final int POINT_FOR_COORDINATE = 16;
+  private static final int ADD_MARKER_NATIVE = 17;
+  private static final int REMOVE_MARKER_NATIVE = 18;
 
 
   private final Map<String, Integer> MAP_TYPES = MapBuilder.of(
@@ -182,11 +193,6 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
     view.map.getUiSettings().setZoomGesturesEnabled(zoomEnabled);
   }
 
-  @ReactProp(name = "zoomControlEnabled", defaultBoolean = true)
-  public void setZoomControlEnabled(AirMapView view, boolean zoomControlEnabled) {
-    view.map.getUiSettings().setZoomControlsEnabled(zoomControlEnabled);
-  }
-
   @ReactProp(name = "rotateEnabled", defaultBoolean = false)
   public void setRotateEnabled(AirMapView view, boolean rotateEnabled) {
     view.map.getUiSettings().setRotateGesturesEnabled(rotateEnabled);
@@ -232,13 +238,6 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
     view.map.setMaxZoomPreference(maxZoomLevel);
   }
 
-  @ReactProp(name = "kmlSrc")
-  public void setKmlSrc(AirMapView view, String kmlUrl) {
-    if (kmlUrl != null) {
-      view.setKmlSrc(kmlUrl);
-    }
-  }
-
   @Override
   public void receiveCommand(AirMapView view, int commandId, @Nullable ReadableArray args) {
     Integer duration;
@@ -248,7 +247,16 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
     Double latDelta;
     float bearing;
     float angle;
+    float zoom;
+    String jsStyle;
+    String imageSrc;
     ReadableMap region;
+    String pointId;
+    int w;
+    int h;
+    boolean flat;
+
+    List<LatLng> listPoints = new ArrayList<>();
 
     switch (commandId) {
       case ANIMATE_TO_REGION:
@@ -284,6 +292,11 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
         duration = args.getInt(1);
         view.animateToBearing(bearing, duration);
         break;
+      case ANIMATE_TO_BEARING_ZOOM:
+        bearing = (float)args.getDouble(0);
+        duration = args.getInt(1);
+        view.animateToBearingAndZoom(bearing, duration);
+        break;
 
       case FIT_TO_ELEMENTS:
         view.fitToElements(args.getBoolean(0));
@@ -299,6 +312,60 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
 
       case SET_MAP_BOUNDARIES:
         view.setMapBoundaries(args.getMap(0), args.getMap(1));
+        break;
+      case ZOOM_MAP:
+        zoom = (float)args.getDouble(0);
+        duration = args.getInt(1);
+        view.zoomMap(zoom, duration);
+        break;
+      case MAP_STYLE:
+        jsStyle = args.getString(0);
+        view.setMapStyle(jsStyle);
+        break;
+      case ANIMATE_ZOOM:
+        lat = args.getDouble(0);
+        lng = args.getDouble(1);
+        zoom = (float)args.getDouble(2);
+        angle = (float)args.getDouble(3);
+        view.animateToCameraWithZoomAngle(lat, lng, zoom, angle, 500);
+        break;
+      case ADD_MARKER:
+        region = args.getMap(0);
+        lng = region.getDouble("longitude");
+        lat = region.getDouble("latitude");
+        imageSrc = args.getString(1);
+        pointId = args.getString(2);
+        zoom = (float) args.getDouble(3);
+        view.addMarker(new LatLng(lat, lng), imageSrc, pointId, zoom);
+        break;
+      case ADD_MARKER_NATIVE:
+        region = args.getMap(0);
+        lng = region.getDouble("longitude");
+        lat = region.getDouble("latitude");
+        imageSrc = args.getString(1);
+        pointId = args.getString(2);
+        bearing = (float) args.getDouble(3);
+        view.addMarkerNative(new LatLng(lat, lng), imageSrc, pointId, bearing);
+        break;
+      case ANIMATE_ANGLE:
+        lat = args.getDouble(0);
+        lng = args.getDouble(1);
+        zoom = (float)args.getDouble(2);
+        angle = (float)args.getDouble(3);
+        bearing = (float)args.getDouble(4);
+        view.animateToCameraWithAngle(lat, lng, zoom, angle,bearing, 500);
+        break;
+      case REMOVE_MARKER:
+        view.removeAllMarker();
+        break;
+      case REMOVE_MARKER_NATIVE:
+        view.removeMarkerNative();
+        break;
+      case POINT_FOR_COORDINATE:
+        region = args.getMap(0);
+        lng = region.getDouble("longitude");
+        lat = region.getDouble("latitude");
+        view.pointForCoordinate(new LatLng(lat, lng));
         break;
     }
   }
@@ -317,13 +384,11 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
     );
 
     map.putAll(MapBuilder.of(
-        "onUserLocationChange", MapBuilder.of("registrationName", "onUserLocationChange"),
         "onMarkerDragStart", MapBuilder.of("registrationName", "onMarkerDragStart"),
         "onMarkerDrag", MapBuilder.of("registrationName", "onMarkerDrag"),
         "onMarkerDragEnd", MapBuilder.of("registrationName", "onMarkerDragEnd"),
         "onPanDrag", MapBuilder.of("registrationName", "onPanDrag"),
-        "onKmlReady", MapBuilder.of("registrationName", "onKmlReady"),
-        "onPoiClick", MapBuilder.of("registrationName", "onPoiClick")
+        "onCustomMarkerPress", MapBuilder.of("registrationName", "onCustomMarkerPress")
     ));
 
     return map;
@@ -343,9 +408,19 @@ public class AirMapManager extends ViewGroupManager<AirMapView> {
     );
 
     map.putAll(MapBuilder.of(
-      "setMapBoundaries", SET_MAP_BOUNDARIES
+      "setMapBoundaries", SET_MAP_BOUNDARIES,
+      "zoomMap", ZOOM_MAP,
+      "setMapStyle", MAP_STYLE,
+      "animateToCameraWithZoomAngle", ANIMATE_ZOOM,
+      "animateToCameraWithAngle", ANIMATE_ANGLE,
+      "addMarker", ADD_MARKER,
+      "removeAllMarker", REMOVE_MARKER
     ));
-
+    map.putAll(MapBuilder.of(
+            "pointForCoordinate", POINT_FOR_COORDINATE,
+            "addMarkerNative", ADD_MARKER_NATIVE,
+            "removeMarkerNative", REMOVE_MARKER_NATIVE
+    ));
     return map;
   }
 

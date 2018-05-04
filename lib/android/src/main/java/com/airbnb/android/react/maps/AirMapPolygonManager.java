@@ -47,11 +47,6 @@ public class AirMapPolygonManager extends ViewGroupManager<AirMapPolygon> {
     view.setCoordinates(coordinates);
   }
 
-  @ReactProp(name = "holes")
-  public  void setHoles(AirMapPolygon view, ReadableArray holes) {
-    view.setHoles(holes);
-  }
-
   @ReactProp(name = "strokeWidth", defaultFloat = 1f)
   public void setStrokeWidth(AirMapPolygon view, float widthInPoints) {
     float widthInScreenPx = metrics.density * widthInPoints; // done for parity with iOS
@@ -66,11 +61,6 @@ public class AirMapPolygonManager extends ViewGroupManager<AirMapPolygon> {
   @ReactProp(name = "strokeColor", defaultInt = Color.RED, customType = "Color")
   public void setStrokeColor(AirMapPolygon view, int color) {
     view.setStrokeColor(color);
-  }
-
-  @ReactProp(name = "tappable", defaultBoolean = false)
-  public void setTappable(AirMapPolygon view, boolean tapabble) {
-    view.setTappable(tapabble);
   }
 
   @ReactProp(name = "geodesic", defaultBoolean = false)

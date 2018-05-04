@@ -6,7 +6,11 @@
 //
 
 #import <React/RCTViewManager.h>
+#import "AIRGMSMarker.h"
 
 @interface AIRGoogleMapManager : RCTViewManager
+
+@property (nonatomic, strong) NSMutableArray* warningArray;
+@property (nonatomic, strong) AIRGMSMarker* navigationMarker;
 
 @end

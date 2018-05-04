@@ -5,13 +5,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Animatable;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.view.View;
 import android.widget.LinearLayout;
-import android.animation.ObjectAnimator;
-import android.util.Property;
-import android.animation.TypeEvaluator;
 
 import com.facebook.common.references.CloseableReference;
 import com.facebook.datasource.DataSource;
@@ -116,25 +112,6 @@ public class AirMapMarker extends AirMapFeature {
     logoHolder.onAttach();
   }
 
-  public AirMapMarker(Context context, MarkerOptions options) {
-    super(context);
-    this.context = context;
-    logoHolder = DraweeHolder.create(createDraweeHierarchy(), context);
-    logoHolder.onAttach();
-
-    position = options.getPosition();
-    setAnchor(options.getAnchorU(), options.getAnchorV());
-    setCalloutAnchor(options.getInfoWindowAnchorU(), options.getInfoWindowAnchorV());
-    setTitle(options.getTitle());
-    setSnippet(options.getSnippet());
-    setRotation(options.getRotation());
-    setFlat(options.isFlat());
-    setDraggable(options.isDraggable());
-    setZIndex(Math.round(options.getZIndex()));
-    setAlpha(options.getAlpha());
-    iconBitmapDescriptor = options.getIcon();
-  }
-
   private GenericDraweeHierarchy createDraweeHierarchy() {
     return new GenericDraweeHierarchyBuilder(getResources())
         .setActualImageScaleType(ScalingUtils.ScaleType.FIT_CENTER)
@@ -150,6 +127,13 @@ public class AirMapMarker extends AirMapFeature {
     update();
   }
 
+  public void setPosition(LatLng latLng){
+    position = latLng;
+    if (marker != null) {
+      marker.setPosition(position);
+    }
+    update();
+  }
   public void setIdentifier(String identifier) {
     this.identifier = identifier;
     update();
@@ -240,29 +224,6 @@ public class AirMapMarker extends AirMapFeature {
     update();
   }
 
-  public LatLng interpolate(float fraction, LatLng a, LatLng b) {
-    double lat = (b.latitude - a.latitude) * fraction + a.latitude;
-    double lng = (b.longitude - a.longitude) * fraction + a.longitude;
-    return new LatLng(lat, lng);
-  }
-
-  public void animateToCoodinate(LatLng finalPosition, Integer duration) {
-    TypeEvaluator<LatLng> typeEvaluator = new TypeEvaluator<LatLng>() {
-      @Override
-      public LatLng evaluate(float fraction, LatLng startValue, LatLng endValue) {
-        return interpolate(fraction, startValue, endValue);
-      }
-    };
-    Property<Marker, LatLng> property = Property.of(Marker.class, LatLng.class, "position");
-    ObjectAnimator animator = ObjectAnimator.ofObject(
-      marker,
-      property,
-      typeEvaluator,
-      finalPosition);
-    animator.setDuration(duration);
-    animator.start();
-  }
-
   public void setImage(String uri) {
     if (uri == null) {
       iconBitmapDescriptor = null;
@@ -284,15 +245,7 @@ public class AirMapMarker extends AirMapFeature {
     } else {
       iconBitmapDescriptor = getBitmapDescriptorByName(uri);
       if (iconBitmapDescriptor != null) {
-          int drawableId = getDrawableResourceByName(uri);
-          iconBitmap = BitmapFactory.decodeResource(getResources(), drawableId);
-          if (iconBitmap == null) { // VectorDrawable or similar
-              Drawable drawable = getResources().getDrawable(drawableId);
-              iconBitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-              drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-              Canvas canvas = new Canvas(iconBitmap);
-              drawable.draw(canvas);
-          }
+          iconBitmap = BitmapFactory.decodeResource(getResources(), getDrawableResourceByName(uri));
       }
       update();
     }
@@ -336,8 +289,10 @@ public class AirMapMarker extends AirMapFeature {
       // creating a bitmap from an arbitrary view
       if (iconBitmapDescriptor != null) {
         Bitmap viewBitmap = createDrawable();
-        int width = Math.max(iconBitmap.getWidth(), viewBitmap.getWidth());
-        int height = Math.max(iconBitmap.getHeight(), viewBitmap.getHeight());
+//        int width = Math.max(iconBitmap.getWidth(), viewBitmap.getWidth());
+//        int height = Math.max(iconBitmap.getHeight(), viewBitmap.getHeight());
+        int width = 30;
+        int height = 29;
         Bitmap combinedBitmap = Bitmap.createBitmap(width, height, iconBitmap.getConfig());
         Canvas canvas = new Canvas(combinedBitmap);
         canvas.drawBitmap(iconBitmap, 0, 0, null);

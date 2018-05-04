@@ -32,7 +32,7 @@
 @property (nonatomic, assign) double opacity;
 @property (nonatomic, assign) BOOL draggable;
 @property (nonatomic, assign) BOOL tracksViewChanges;
-@property (nonatomic, assign) BOOL tracksInfoWindowChanges;
+@property (nonatomic, assign) BOOL flat;
 
 - (void)showCalloutView;
 - (void)hideCalloutView;
